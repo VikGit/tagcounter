@@ -1,4 +1,6 @@
 import pycurl
+import sys
+import getopt
 from io import BytesIO
 
 class GetResponse:
@@ -25,7 +27,33 @@ class GetResponse:
     body = self.buffer.getvalue()
     print(body.decode(self.enc))
 
-url = input("Please specify URL for inspecting [pycurl.io]: ")
-url = url or 'pycurl.io'
+def usage():
+  print("""Example of usage:
+             tagcounter
+             tagcounter --help
+             tagcounter --get 'google.com'
+             tagcounter --view 'google.com'
+             """)
+
+try:
+    opts, args = getopt.getopt(sys.argv[1:], 'g:v:h', ['get=', 'view=', 'help'])
+except getopt.GetoptError:
+    usage()
+    sys.exit(2)
+
+for opt, arg in opts:
+    if opt in ('-h', '--help'):
+        usage()
+        sys.exit(2)
+    elif opt in ('-g', '--get'):
+        url = arg
+    elif opt in ('-v', '--view'):
+        site = arg
+    else:
+        usage()
+        sys.exit(2)
+
 response = GetResponse(url)
 body = response.get()
+
+
