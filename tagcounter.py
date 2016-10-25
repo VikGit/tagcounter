@@ -2,6 +2,7 @@ import pycurl
 import sys
 import getopt
 from io import BytesIO
+from bs4 import BeautifulSoup as BS
 
 class GetResponse:
     """
@@ -25,8 +26,8 @@ class GetResponse:
         c.setopt(c.WRITEDATA, self.buffer)
         c.perform()
         c.close()
-        body = self.buffer.getvalue()
-        print(body.decode(self.enc))
+        self.body = self.buffer.getvalue()
+        print(self.body.decode(self.enc))
 
 def usage():
     print("""Example of usage:
@@ -35,9 +36,14 @@ def usage():
           tagcounter --view 'google.com'
           """)
 
+def counter(html):
+    soup = BS(html)
+    for tag in soup.findAll():
+        print(tag.name)
+
 try:
     opts, args = getopt.getopt(sys.argv[1:], 'g:v:e:h',
-                             ['get=', 'view=', 'enc=', 'help'])
+                               ['get=', 'view=', 'enc=', 'help'])
 except getopt.GetoptError:
     usage()
     sys.exit(2)
@@ -58,10 +64,10 @@ for opt, arg in opts:
         usage()
         sys.exit(2)
 
-if url:
-    response = GetResponse(url)
-    if enc:
-        response.encoding(enc)
-    body = response.get()
-
-
+if __name__ == '__main__':
+    if url:
+        response = GetResponse(url)
+        if enc:
+            response.encoding(enc)
+        response.get()
+        counter(response.body)
