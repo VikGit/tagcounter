@@ -1,8 +1,7 @@
-import pycurl
-import sys
-import getopt
+import pycurl, sys, getopt
 from io import BytesIO
 from bs4 import BeautifulSoup as BS
+from tabulate import tabulate as tb
 
 class GetResponse:
     """
@@ -27,7 +26,7 @@ class GetResponse:
         c.perform()
         c.close()
         self.body = self.buffer.getvalue()
-        print(self.body.decode(self.enc))
+        #print(self.body.decode(self.enc))
 
 def usage():
     print("""Example of usage:
@@ -37,9 +36,16 @@ def usage():
           """)
 
 def counter(html):
-    soup = BS(html)
+    tags = []
+    res = {}
+    soup = BS(html, 'html.parser')
     for tag in soup.findAll():
-        print(tag.name)
+        tags.append(tag.name)
+    uniq = list(set(tags))
+    for tag in uniq:
+        res[tag] = tags.count(tag)
+    sort=sorted(res.items(), key=lambda x:(x[1],x[0]))
+    print(tb(sort, headers=['Tags', 'Numbers'], tablefmt="psql"))
 
 try:
     opts, args = getopt.getopt(sys.argv[1:], 'g:v:e:h',
