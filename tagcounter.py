@@ -1,4 +1,4 @@
-import pycurl, sys, getopt, os, time
+import pycurl, sys, getopt, os, time, yaml
 from io import BytesIO
 from bs4 import BeautifulSoup as BS
 from tabulate import tabulate as tb
@@ -53,15 +53,26 @@ def log(url, lpath='logs'):
     with open('{}/{}'.format(lpath, 'access.log'), 'a+') as file:
         file.write('{} {}\n'.format(time.strftime('%Y-%m-%d %H:%M:%S'), url))
 
+def check_syn(yfile, syn):
+    with open(yfile, 'r') as stream:
+        allsyn = yaml.load(stream)
+    try:
+        synurl = allsyn[syn]
+        print('Synonym {} found!'.format(syn))
+        return synurl
+    except BaseException as bexc:
+        return syn
+
 try:
-    opts, args = getopt.getopt(sys.argv[1:], 'g:v:e:h',
-                               ['get=', 'view=', 'enc=', 'help'])
+    opts, args = getopt.getopt(sys.argv[1:], 'g:v:e:s:h',
+                               ['get=', 'view=', 'enc=', 'synfile=', 'help'])
 except getopt.GetoptError:
     usage()
     sys.exit(2)
 
 url = None
 enc = None
+synfile = 'synonyms.yaml'
 for opt, arg in opts:
     if opt in ('-h', '--help'):
         usage()
@@ -72,15 +83,18 @@ for opt, arg in opts:
         site = arg
     elif opt in ('-e', '--enc'):
         enc = arg
+    elif opt in ('-s', '--synfile'):
+        synfile = arg
     else:
         usage()
         sys.exit(2)
 
 if __name__ == '__main__':
     if url:
-        response = GetResponse(url)
+        link = check_syn(synfile, url)
+        response = GetResponse(link)
         if enc:
             response.encoding(enc)
         response.get()
         counter(response.body)
-        log(url)
+        log(link)
