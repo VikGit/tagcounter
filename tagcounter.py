@@ -1,4 +1,4 @@
-import pycurl, sys, getopt
+import pycurl, sys, getopt, os, time
 from io import BytesIO
 from bs4 import BeautifulSoup as BS
 from tabulate import tabulate as tb
@@ -14,11 +14,11 @@ class GetResponse:
         self.url = value
         self.buffer = BytesIO()
         self.enc = 'iso-8859-1'
-        print("Inspected URL: {}".format(self.url))
+        print('Inspected URL: {}'.format(self.url))
     def encoding(self, value):
         self.enc = value
     def get(self):
-        print("Encoding: {}".format(self.enc))
+        print('Encoding: {}'.format(self.enc))
         c = pycurl.Curl()
         c.setopt(c.URL, self.url)
         c.setopt(c.FOLLOWLOCATION, True)
@@ -45,7 +45,13 @@ def counter(html):
     for tag in uniq:
         res[tag] = tags.count(tag)
     sort=sorted(res.items(), key=lambda x:(x[1],x[0]))
-    print(tb(sort, headers=['Tags', 'Numbers'], tablefmt="psql"))
+    print(tb(sort, headers=['Tags', 'Numbers'], tablefmt='psql'))
+
+def log(url, lpath='logs'):
+    if not os.path.exists(lpath):
+        os.makedirs(lpath)
+    with open('{}/{}'.format(lpath, 'access.log'), 'a+') as file:
+        file.write('{} {}\n'.format(time.strftime('%Y-%m-%d %H:%M:%S'), url))
 
 try:
     opts, args = getopt.getopt(sys.argv[1:], 'g:v:e:h',
@@ -77,3 +83,4 @@ if __name__ == '__main__':
             response.encoding(enc)
         response.get()
         counter(response.body)
+        log(url)
