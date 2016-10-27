@@ -1,4 +1,5 @@
 import pycurl, sys, getopt, os, time, yaml
+from tkinter import *
 from io import BytesIO
 from bs4 import BeautifulSoup as BS
 from tabulate import tabulate as tb
@@ -60,7 +61,7 @@ def check_syn(yfile, syn):
         synurl = allsyn[syn]
         print('Synonym {} found!'.format(syn))
         return synurl
-    except BaseException as bexc:
+    except BaseException:
         return syn
 
 try:
@@ -98,3 +99,6 @@ if __name__ == '__main__':
         response.get()
         counter(response.body)
         log(link)
+    else:
+        root=Tk()
+        root.mainloop()
