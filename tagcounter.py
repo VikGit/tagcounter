@@ -1,4 +1,4 @@
-import pycurl, sys, getopt, os, time, yaml
+import pycurl, sys, getopt, os, time, yaml, argparse
 from tkinter import *
 from io import BytesIO
 from bs4 import BeautifulSoup as BS
@@ -64,41 +64,27 @@ def check_syn(yfile, syn):
     except BaseException:
         return syn
 
-try:
-    opts, args = getopt.getopt(sys.argv[1:], 'g:v:e:s:h',
-                               ['get=', 'view=', 'enc=', 'synfile=', 'help'])
-except getopt.GetoptError:
-    usage()
-    sys.exit(2)
-
-url = None
-enc = None
-synfile = 'synonyms.yaml'
-for opt, arg in opts:
-    if opt in ('-h', '--help'):
-        usage()
-        sys.exit(2)
-    elif opt in ('-g', '--get'):
-        url = arg
-    elif opt in ('-v', '--view'):
-        site = arg
-    elif opt in ('-e', '--enc'):
-        enc = arg
-    elif opt in ('-s', '--synfile'):
-        synfile = arg
-    else:
-        usage()
-        sys.exit(2)
+parser = argparse.ArgumentParser(description='This program inspect a Web-page \
+                                              and returt the number of tags')
+parser.add_argument('-g', '--get', dest='url', default=None, type=str,
+                    help='URL for inspecting')
+parser.add_argument('-v', '--view', dest='vurl', type=str,
+                    help='URL for extracting information from DB')
+parser.add_argument('-e', '--enc', default=None, type=str,
+                    help='Encoding for inspecting URL')
+parser.add_argument('-s', '--synfile', default='synonyms.yaml', type=str,
+                    help='Path for file with synonyms')
+args = parser.parse_args()
 
 if __name__ == '__main__':
-    if url:
-        link = check_syn(synfile, url)
-        response = GetResponse(link)
-        if enc:
-            response.encoding(enc)
+    if args.url:
+        url = check_syn(args.synfile, args.url)
+        response = GetResponse(url)
+        if args.enc:
+            response.encoding(args.enc)
         response.get()
         counter(response.body)
-        log(link)
+        log(url)
     else:
         root=Tk()
         root.mainloop()
