@@ -1,4 +1,4 @@
-import pycurl, sys, getopt, os, time, yaml, argparse
+import pycurl, sys, os, time, yaml, argparse, sqlite3
 from tkinter import *
 from io import BytesIO
 from bs4 import BeautifulSoup as BS
@@ -29,13 +29,6 @@ class GetResponse:
         self.body = self.buffer.getvalue()
         #print(self.body.decode(self.enc))
 
-def usage():
-    print("""Example of usage:
-          tagcounter tagcounter --help
-          tagcounter --get 'google.com'
-          tagcounter --view 'google.com'
-          """)
-
 def counter(html):
     tags = []
     res = {}
@@ -55,28 +48,54 @@ def log(url, lpath='logs'):
         file.write('{} {}\n'.format(time.strftime('%Y-%m-%d %H:%M:%S'), url))
 
 def check_syn(yfile, syn):
-    with open(yfile, 'r') as stream:
-        allsyn = yaml.load(stream)
     try:
-        synurl = allsyn[syn]
-        print('Synonym {} found!'.format(syn))
-        return synurl
-    except BaseException:
-        return syn
+        with open(yfile, 'r') as stream:
+            allsyn = yaml.load(stream)
+        try:
+            synurl = allsyn[syn]
+            print('Synonym {} found!'.format(syn))
+            return synurl
+        except BaseException:
+            return syn
+    except:
+        print("File {} doesn't exist!".format(yfile))
 
-parser = argparse.ArgumentParser(description='This program inspect a Web-page \
-                                              and returt the number of tags')
-parser.add_argument('-g', '--get', dest='url', default=None, type=str,
-                    help='URL for inspecting')
-parser.add_argument('-v', '--view', dest='vurl', type=str,
-                    help='URL for extracting information from DB')
-parser.add_argument('-e', '--enc', default=None, type=str,
-                    help='Encoding for inspecting URL')
-parser.add_argument('-s', '--synfile', default='synonyms.yaml', type=str,
-                    help='Path for file with synonyms')
-args = parser.parse_args()
+class DB:
+    def __init__(self, value):
+        self.dbname = value
+        self.table = 'taginfo'
+        self.con = sqlite3.connect(self.dbname)
+        self.cur = self.con.cursor()
+    def insert(self, site, url, tags):
+        self.cur.execute(
+                """create table if not exists ? (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                site CHAR,
+                url TEXT,
+                tags TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)
+                """, self.table
+                )
+        ptags = pickle.dumps(tags)
+        values = (self.table, self.site, self.url, ptags)
+        self.cur.execute("insert into ?(site, url, tags) values (?, ?, ?)", v)
+        self.con.commit()
+        return self.cur
 
-if __name__ == '__main__':
+def main():
+    parser = argparse.ArgumentParser(description='This program inspect a Web-page \
+                                                  and returt the number of tags')
+    parser.add_argument('-g', '--get', dest='url', default=None, type=str,
+                        help='URL for inspecting')
+    parser.add_argument('-v', '--view', dest='vurl', type=str,
+                        help='URL for extracting information from DB')
+    parser.add_argument('-e', '--enc', default=None, type=str,
+                        help='Encoding for inspecting URL')
+    parser.add_argument('-s', '--synfile', default='synonyms.yaml', type=str,
+                        help='Path for file with synonyms')
+    parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+    args = parser.parse_args()
+
     if args.url:
         url = check_syn(args.synfile, args.url)
         response = GetResponse(url)
@@ -88,3 +107,7 @@ if __name__ == '__main__':
     else:
         root=Tk()
         root.mainloop()
+
+if __name__ == '__main__':
+    #main()
+    db_execute('insert into taginfo(site, url) values ("google.com", "http://google.com")')
