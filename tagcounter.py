@@ -1,4 +1,4 @@
-import pycurl, sys, os, time, yaml, argparse, sqlite3
+import pycurl, sys, os, time, yaml, argparse, sqlite3, pickle
 from tkinter import *
 from io import BytesIO
 from bs4 import BeautifulSoup as BS
@@ -11,13 +11,13 @@ class GetResponse:
          GetResponse.encoding(value) - to change encoding for decoding HTML page
          GetResponse.get() - to get source code of Web-page
     """
-    def __init__(self, value):
-        self.url = value
+    def __init__(self, url):
+        self.url = url
         self.buffer = BytesIO()
         self.enc = 'iso-8859-1'
         print('Inspected URL: {}'.format(self.url))
-    def encoding(self, value):
-        self.enc = value
+    def encoding(self, enc):
+        self.enc = enc
     def get(self):
         print('Encoding: {}'.format(self.enc))
         c = pycurl.Curl()
@@ -61,8 +61,8 @@ def check_syn(yfile, syn):
         print("File {} doesn't exist!".format(yfile))
 
 class DB:
-    def __init__(self, value):
-        self.dbname = value
+    def __init__(self, dbname='db'):
+        self.dbname = dbname
         self.table = 'taginfo'
         self.con = sqlite3.connect(self.dbname)
         self.cur = self.con.cursor()
@@ -77,7 +77,7 @@ class DB:
                 """, self.table
                 )
         ptags = pickle.dumps(tags)
-        values = (self.table, self.site, self.url, ptags)
+        v = (self.table, self.site, self.url, ptags)
         self.cur.execute("insert into ?(site, url, tags) values (?, ?, ?)", v)
         self.con.commit()
         return self.cur
@@ -110,4 +110,5 @@ def main():
 
 if __name__ == '__main__':
     #main()
-    db_execute('insert into taginfo(site, url) values ("google.com", "http://google.com")')
+    #db_execute('insert into taginfo(site, url) values ("google.com", "http://google.com")')
+    db = DB()
