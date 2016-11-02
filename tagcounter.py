@@ -104,10 +104,11 @@ def check_syn(yfile, syn):
         try:
             synurl = allsyn[syn]
             return synurl, syn
-        except BaseException:
+        except:
             return syn, None
-    except:
-        print("File {} doesn't exist!".format(yfile))
+    except IOError:
+        print("File {} doesn't exist! \nUse --synfile option to specify other synonyms file".format(yfile))
+        sys.exit(1)
 
 def main():
     parser = argparse.ArgumentParser(description='This program inspect a Web-page \
