@@ -27,7 +27,56 @@ class GetResponse:
         c.perform()
         c.close()
         self.body = self.buffer.getvalue()
-        #print(self.body.decode(self.enc))
+
+class DB:
+    """
+    This class uses for operations with sqlite3 database
+        Use:
+            DB.insert(site, url, tags) - to add the records to DB
+            DB.select(site) - to get info about site from DB
+    """
+    def __init__(self, dbname='db'):
+        self.dbname = dbname
+        self.table = 'taginfo'
+        self.con = sqlite3.connect(self.dbname)
+        self.cur = self.con.cursor()
+    def insert(self, site, url, tags):
+        self.cur.execute(
+                """
+                create table if not exists {} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                site CHAR,
+                url TEXT,
+                tags TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)
+                """.format(self.table)
+                )
+        ptags = pickle.dumps(tags)
+        v = (site, url, ptags,)
+        self.cur.execute(
+                """
+                insert into {} (site, url, tags) values (?, ?, ?)
+                """.format(self.table), v
+                )
+        self.con.commit()
+        return self.cur
+    def select(self, site):
+        self.cur.execute(
+                      """
+                      select site,url,tags, timestamp from {} where site=?
+                      """.format(self.table), (site,)
+                      )
+        res = self.cur.fetchall()
+        if res:
+            for row in res:
+                l = list(row)
+                l[2] = pickle.loads(l[2])
+                print(l)
+        else:
+            print("Sorry, but record for {} site is absent in the database".format(site))
+    def close(self):
+        self.cur.close()
+        self.con.close()
 
 def counter(html):
     tags = []
@@ -40,6 +89,7 @@ def counter(html):
         res[tag] = tags.count(tag)
     sort=sorted(res.items(), key=lambda x:(x[1],x[0]))
     print(tb(sort, headers=['Tags', 'Numbers'], tablefmt='psql'))
+    return res
 
 def log(url, lpath='logs'):
     if not os.path.exists(lpath):
@@ -53,34 +103,11 @@ def check_syn(yfile, syn):
             allsyn = yaml.load(stream)
         try:
             synurl = allsyn[syn]
-            print('Synonym {} found!'.format(syn))
-            return synurl
+            return synurl, syn
         except BaseException:
-            return syn
+            return syn, None
     except:
         print("File {} doesn't exist!".format(yfile))
-
-class DB:
-    def __init__(self, dbname='db'):
-        self.dbname = dbname
-        self.table = 'taginfo'
-        self.con = sqlite3.connect(self.dbname)
-        self.cur = self.con.cursor()
-    def insert(self, site, url, tags):
-        self.cur.execute(
-                """create table if not exists ? (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                site CHAR,
-                url TEXT,
-                tags TEXT,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)
-                """, self.table
-                )
-        ptags = pickle.dumps(tags)
-        v = (self.table, self.site, self.url, ptags)
-        self.cur.execute("insert into ?(site, url, tags) values (?, ?, ?)", v)
-        self.con.commit()
-        return self.cur
 
 def main():
     parser = argparse.ArgumentParser(description='This program inspect a Web-page \
@@ -97,19 +124,30 @@ def main():
     args = parser.parse_args()
 
     if args.url:
-        url = check_syn(args.synfile, args.url)
+        url, orig_syn = check_syn(args.synfile, args.url)
         response = GetResponse(url)
         if args.enc:
             response.encoding(args.enc)
         response.get()
-        counter(response.body)
+        tags = counter(response.body)
         log(url)
+        db = DB()
+        if orig_syn:
+            db.insert(orig_syn, url, tags)
+        else:
+            db.insert(url, url, tags)
+        db.close()
+    elif args.vurl:
+        url, orig_syn = check_syn(args.synfile, args.vurl)
+        db = DB()
+        if orig_syn:
+            db.select(orig_syn)
+        else:
+            db.select(url)
+        db.close()
     else:
         root=Tk()
         root.mainloop()
 
 if __name__ == '__main__':
-    #main()
-    #db_execute('insert into taginfo(site, url) values ("google.com", "http://google.com")')
-    db = DB()
-    db.insert('google', 'http://google.com/', '<br>')
+    main()
