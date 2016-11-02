@@ -112,3 +112,4 @@ if __name__ == '__main__':
     #main()
     #db_execute('insert into taginfo(site, url) values ("google.com", "http://google.com")')
     db = DB()
+    db.insert('google', 'http://google.com/', '<br>')
