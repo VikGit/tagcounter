@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 import pycurl, sys, os, time, yaml, argparse, sqlite3, pickle
 from tkinter import *
-from tkinter.ttk import *
 from io import BytesIO
 from bs4 import BeautifulSoup as BS
 from tabulate import tabulate as tb
@@ -65,7 +64,7 @@ class DB:
     def select(self, site):
         self.cur.execute(
                       """
-                      select site,url,tags, timestamp from {} where site=? limit 1
+                      select site,url,tags, timestamp from {} where site=?
                       """.format(self.table), (site,)
                       )
         res = self.cur.fetchall()
@@ -74,22 +73,8 @@ class DB:
                 l = list(row)
                 l[2] = pickle.loads(l[2])
                 print(l)
-            info=l
         else:
-            message = "Sorry, but record for {} site is absent in the database".format(site)
-            print(message)
-            info = message
-        return info
-    def last(self, number):
-        last = self.cur.execute(
-                              """
-                              select site from {} order by id desc limit {}
-                              """.format(self.table, number)
-                              )
-        res = []
-        for row in last:
-            res.append(row[0])
-        return res
+            print("Sorry, but record for {} site is absent in the database".format(site))
     def close(self):
         self.cur.close()
         self.con.close()
@@ -104,9 +89,8 @@ def counter(html):
     for tag in uniq:
         res[tag] = tags.count(tag)
     sort=sorted(res.items(), key=lambda x:(x[1],x[0]))
-    restb=tb(sort, headers=['Tags', 'Numbers'], tablefmt='psql')
-    print(restb)
-    return res, restb
+    print(tb(sort, headers=['Tags', 'Numbers'], tablefmt='psql'))
+    return res
 
 def log(url, lpath='logs'):
     if not os.path.exists(lpath):
@@ -127,87 +111,6 @@ def check_syn(yfile, syn):
         print("File {} doesn't exist! \nUse --synfile option to specify other synonyms file".format(yfile))
         sys.exit(1)
 
-
-def download(url, synfile, enc, tktext=None, visual=False):
-    try:
-        url, orig_syn = check_syn(synfile, url)
-        response = GetResponse(url)
-        if enc:
-            response.encoding(enc)
-        response.get()
-        tags, tagstb = counter(response.body)
-        log(url)
-        db = DB()
-        if orig_syn:
-            db.insert(orig_syn, url, tags)
-        else:
-            db.insert(url, url, tags)
-            db.close()
-    except BaseException as error:
-        tagstb = error
-    if visual:
-        tktext.delete('1.0', END)
-        tktext.insert(END, tagstb)
-
-def view(vurl, synfile, tktext=None, visual=False):
-    try:
-        url, orig_syn = check_syn(synfile, vurl)
-        db = DB()
-        if orig_syn:
-            res = db.select(orig_syn)
-            db.close()
-        else:
-            res = db.select(url)
-            db.close()
-    except BaseException as error:
-        res = error
-    if visual:
-       tktext.delete('1.0', END)
-       tktext.insert(END, res)
-
-def visual(title, synfile, enc):
-    text = 'None'
-    win = Tk()
-    win.title(title)
-    # "Enter the website" section
-    textFrame = Frame(win)
-    entryLabel = Label(textFrame)
-    entryLabel["text"] = "Enter the website:"
-    entryLabel.grid(row=0, column=0, padx=2, pady=2)
-    entryWidget = Entry(textFrame)
-    entryWidget["width"] = 21
-    entryWidget.grid(row=0, column=1, padx=2, pady=2)
-    textFrame.grid(row=0, column=0, columnspan=2, sticky=N+S+E+W)
-
-    #Scrollbar and test field
-    scroll = Scrollbar(win)
-    text = Text(win, height=20, width=40)
-    scroll.grid(row=3, column=3, sticky=N+S+E+W)
-    text.grid(row=3, column=0, columnspan=2)
-    scroll.config(command=text.yview)
-    text.config(yscrollcommand=scroll.set)
-
-    # Buttons for dowloads and shows from db
-    down = Button(win, text="Download")
-    down.grid(row=1, column=0, padx=2, pady=2, sticky=N+S+E+W)
-    down["command"] = lambda: download(entryWidget.get(), synfile, enc, text, True)
-    showfromdb = Button(win, text="Show from DB")
-    showfromdb.grid(row=1, column=1, padx=2, pady=2, sticky=N+S+E+W)
-    showfromdb["command"] = lambda: view(entryWidget.get(), synfile, text, True)
-
-    #Combobox
-    db = DB()
-    list1 = db.last(5)
-    db.close()
-    combobox = Combobox(win, values = list1, state='readonly', style='TButton', justify='center')
-    combobox.set(list1[0]) # Пункт по умолчанию
-    combobox.grid(row=2, column=1, padx=2, pady=2, sticky=N+S+E+W)
-    choice = Button(win, text="Select") # создаём кнопку
-    choice["command"] = lambda: download(combobox.get(), synfile, enc, text, True)
-    choice.grid(row=2, column=0, padx=2, pady=2, sticky=N+S+E+W)
-
-    win.mainloop()
-
 def main():
     parser = argparse.ArgumentParser(description='This program inspect a Web-page \
                                                   and returt the number of tags')
@@ -223,11 +126,30 @@ def main():
     args = parser.parse_args()
 
     if args.url:
-        download(args.url, args.synfile, args.synfile)
+        url, orig_syn = check_syn(args.synfile, args.url)
+        response = GetResponse(url)
+        if args.enc:
+            response.encoding(args.enc)
+        response.get()
+        tags = counter(response.body)
+        log(url)
+        db = DB()
+        if orig_syn:
+            db.insert(orig_syn, url, tags)
+        else:
+            db.insert(url, url, tags)
+        db.close()
     elif args.vurl:
-        view(args.vurl, args.synfile)
+        url, orig_syn = check_syn(args.synfile, args.vurl)
+        db = DB()
+        if orig_syn:
+            db.select(orig_syn)
+        else:
+            db.select(url)
+        db.close()
     else:
-        visual('TagCounter v1.0', args.synfile, args.enc)
+        root=Tk()
+        root.mainloop()
 
 if __name__ == '__main__':
     main()
