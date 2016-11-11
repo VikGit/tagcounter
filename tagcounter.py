@@ -20,6 +20,7 @@ class GetResponse:
         print('Inspected URL: {}'.format(self.url))
     def encoding(self, enc):
         self.enc = enc
+        return self.enc
     def get(self):
         print('Encoding: {}'.format(self.enc))
         c = pycurl.Curl()
@@ -128,12 +129,14 @@ def check_syn(yfile, syn):
         sys.exit(1)
 
 
-def download(url, synfile, enc, tktext=None, visual=False):
+def download(url, synfile, enc, tktext=None, st=None, visual=False):
+    print(enc)
     try:
         url, orig_syn = check_syn(synfile, url)
         response = GetResponse(url)
         if enc:
             response.encoding(enc)
+        encod = response.enc
         response.get()
         tags, tagstb = counter(response.body)
         log(url)
@@ -148,6 +151,7 @@ def download(url, synfile, enc, tktext=None, visual=False):
     if visual:
         tktext.delete('1.0', END)
         tktext.insert(END, tagstb)
+        st["text"] = "Enc: " + encod
 
 def view(vurl, synfile, tktext=None, visual=False):
     try:
@@ -187,10 +191,15 @@ def visual(title, synfile, enc):
     scroll.config(command=text.yview)
     text.config(yscrollcommand=scroll.set)
 
+    # Status bar
+    stLabel = Label(win)
+    stLabel["text"] = "Krasheninnikov, 2016"
+    stLabel.grid(row=4, column=0, columnspan=2)
+
     # Buttons for dowloads and shows from db
     down = Button(win, text="Download")
     down.grid(row=1, column=0, padx=2, pady=2, sticky=N+S+E+W)
-    down["command"] = lambda: download(entryWidget.get(), synfile, enc, text, True)
+    down["command"] = lambda: download(entryWidget.get(), synfile, enc, text, stLabel, True)
     showfromdb = Button(win, text="Show from DB")
     showfromdb.grid(row=1, column=1, padx=2, pady=2, sticky=N+S+E+W)
     showfromdb["command"] = lambda: view(entryWidget.get(), synfile, text, True)
@@ -203,7 +212,7 @@ def visual(title, synfile, enc):
     combobox.set(list1[0]) # Пункт по умолчанию
     combobox.grid(row=2, column=1, padx=2, pady=2, sticky=N+S+E+W)
     choice = Button(win, text="Select") # создаём кнопку
-    choice["command"] = lambda: download(combobox.get(), synfile, enc, text, True)
+    choice["command"] = lambda: download(combobox.get(), synfile, enc, text, stLabel, True)
     choice.grid(row=2, column=0, padx=2, pady=2, sticky=N+S+E+W)
 
     win.mainloop()
@@ -223,7 +232,7 @@ def main():
     args = parser.parse_args()
 
     if args.url:
-        download(args.url, args.synfile, args.synfile)
+        download(args.url, args.synfile, args.enc)
     elif args.vurl:
         view(args.vurl, args.synfile)
     else:
