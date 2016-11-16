@@ -4,7 +4,7 @@ setup(
     name='tagcounter',
     version='1.0.0',
     description='Tool for counting HTML tags on a web page',
-    url='https://github.com/VikGit/Other/blob/master/tagcounter.py',
+    url='https://github.com/VikGit/tagcounter',
     author='Viktor Krasheninnikov',
     author_email='krasherspost@gmail.com',
     license='MIT',

@@ -8,10 +8,11 @@ from tabulate import tabulate as tb
 
 class GetResponse:
     """
-    This class help you to get source code of any Web-page
+    This class help you to get source code of any Web-page.
        Use:
-         GetResponse.encoding(value) - to change encoding for decoding HTML page
-         GetResponse.get() - to get source code of Web-page
+         resp = GetResponse()
+         resp.encoding(value) - to change encoding for decoding HTML page.
+         resp.get() - to get source code of Web-page.
     """
     def __init__(self, url):
         self.url = url
@@ -33,27 +34,37 @@ class GetResponse:
 
 class DB:
     """
-    This class uses for operations with sqlite3 database
+    This class uses for operations with sqlite3 database.
         Use:
-            DB.insert(site, url, tags) - to add the records to DB
-            DB.select(site) - to get info about site from DB
+            db = DB()
+            db.insert(site, url, tags) - to add the records to DB.
+            db.select(site) - to get info about site from DB.
+            db.last(number) - to get last <n> records from DB.
+            db.last() - to close connetion with DB.
     """
     def __init__(self, dbname='db'):
+        """
+        Initialize DB and create the table if not exist.
+        """
         self.dbname = dbname
         self.table = 'taginfo'
         self.con = sqlite3.connect(self.dbname)
         self.cur = self.con.cursor()
         self.cur.execute(
-                """
-                create table if not exists {} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                site CHAR,
-                url TEXT,
-                tags TEXT,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)
-                """.format(self.table)
+                     """
+                     create table if not exists {} (
+                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                     site CHAR,
+                     url TEXT,
+                     tags TEXT,
+                     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)
+                     """.format(self.table)
                 )
+
     def insert(self, site, url, tags):
+        """
+        Insert site, url and tagging dictionary into the table.
+        """
         ptags = pickle.dumps(tags)
         v = (site, url, ptags,)
         self.cur.execute(
@@ -63,12 +74,16 @@ class DB:
                 )
         self.con.commit()
         return self.cur
+
     def select(self, site):
+        """
+        Select site, url, tags and timestamp from DB.
+        """
         self.cur.execute(
-                      """
-                      select site,url,tags, timestamp from {} where site=? limit 1
-                      """.format(self.table), (site,)
-                      )
+                     """
+                     select site,url,tags,timestamp from {} where site=? limit 1
+                     """.format(self.table), (site,)
+                 )
         res = self.cur.fetchall()
         if res:
             for row in res:
@@ -81,21 +96,34 @@ class DB:
             print(message)
             info = message
         return info
+
     def last(self, number):
+        """
+        Get last <number> records form DB. Used for default values in Combobox.
+        """
         last = self.cur.execute(
-                              """
-                              select site from {} order by id desc limit {}
-                              """.format(self.table, number)
-                              )
+                           """
+                           select site from {} order by id desc limit {}
+                           """.format(self.table, number)
+                    )
         res = []
         for row in last:
             res.append(row[0])
         return res
+
     def close(self):
+        """
+        Just close connection with DB.
+        """
         self.cur.close()
         self.con.close()
 
 def counter(html):
+    """
+    Here is implemented the main functionality.
+    This function counts tags in HTML page and provide sorted output
+    in table format.
+    """
     tags = []
     res = {}
     soup = BS(html, 'html.parser')
@@ -110,12 +138,19 @@ def counter(html):
     return res, restb
 
 def log(url, lpath='logs'):
+    """
+    Logging data into file.
+    """
     if not os.path.exists(lpath):
         os.makedirs(lpath)
     with open('{}/{}'.format(lpath, 'access.log'), 'a+') as file:
         file.write('{} {}\n'.format(time.strftime('%Y-%m-%d %H:%M:%S'), url))
 
 def check_syn(yfile, syn):
+    """
+    Create symple synonym file if not exist or load existing and check if requested
+    url is synonym. If True -- load value from the file.
+    """
     if not os.path.isfile(yfile):
         def_syn = {'ggl': 'google.com', 'ydx': 'yandex.ru'}
         with open(yfile, 'w') as syn_file:
@@ -134,6 +169,10 @@ def check_syn(yfile, syn):
 
 
 def download(url, synfile, enc, tktext=None, st=None, visual=False):
+    """
+    This fuctions execute all actions that needed to get info about tags.
+    The fuctions is used for both console and visual mode.
+    """
     try:
         url, orig_syn = check_syn(synfile, url)
         response = GetResponse(url)
@@ -157,6 +196,10 @@ def download(url, synfile, enc, tktext=None, st=None, visual=False):
         st["text"] = "Enc: " + encod
 
 def view(vurl, synfile, tktext=None, visual=False):
+    """
+    This function execute all actions that needed for view info about tags
+    from DB. Also used in console and visual modes.
+    """
     try:
         url, orig_syn = check_syn(synfile, vurl)
         db = DB()
@@ -173,7 +216,10 @@ def view(vurl, synfile, tktext=None, visual=False):
        tktext.insert(END, res)
 
 def visual(title, synfile, enc):
-    text = 'None'
+    """
+    This method works with tkinter module and include all info for
+    rendering GUI for the program.
+    """
     win = Tk()
     win.title(title)
     # "Enter the website" section
@@ -223,11 +269,20 @@ def visual(title, synfile, enc):
     win.mainloop()
 
 def ch_pwd(path):
+    """
+    This method determine default working directory for the program.
+    The directory will include DB, logs folder and synonyms file.
+    """
     if not os.path.exists(path):
         os.makedirs(path)
     os.chdir(path)
 
 def main():
+    """
+    The main function.
+    If 'get' or 'view' parameter passed - run console version. If no - run GUI.
+    Parameters 'enc', 'synfile' and 'home' can configure each of running modes.
+    """
     parser = argparse.ArgumentParser(description='This program inspect a Web-page \
                                                   and returt the number of tags')
     parser.add_argument('-g', '--get', dest='url', default=None, type=str,
