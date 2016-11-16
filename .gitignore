@@ -1,4 +1,3 @@
 *.txt
-__*
 tagcounter_app/dist/
 tagcounter_app/tagcounter.egg-info/

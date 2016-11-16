@@ -9,7 +9,7 @@ setup(
     author_email='krasherspost@gmail.com',
     license='MIT',
     packages=find_packages(),
-    install_requires=['pycurl', 'argparse', 'bs4', 'tabulate'],
+    install_requires=['pycurl', 'pyyaml', 'argparse', 'bs4', 'tabulate'],
     entry_points={
         'console_scripts': [
             'tagcounter=tagcounter.tagcounter:main'
