@@ -1,5 +1,4 @@
 *.txt
 __*
-logs/
-logs/*
-db
+tagcounter_app/dist/
+tagcounter_app/tagcounter.egg-info/

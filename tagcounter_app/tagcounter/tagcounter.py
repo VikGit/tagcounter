@@ -222,6 +222,7 @@ def visual(title, synfile, enc):
     """
     win = Tk()
     win.title(title)
+
     # "Enter the website" section
     textFrame = Frame(win)
     entryLabel = Label(textFrame)
@@ -253,9 +254,16 @@ def visual(title, synfile, enc):
     showfromdb.grid(row=1, column=1, padx=2, pady=2, sticky=N+S+E+W)
     showfromdb["command"] = lambda: view(entryWidget.get(), synfile, text, True)
 
+    # Make combobox looks good enough
+    style = Style()
+    style.map('TButton', fieldbackground=[('readonly', 'default')])
+    style.map('TButton', selectbackground=[('readonly', 'default')])
+    style.map('TButton', selectforeground=[('readonly', 'black')])
+
     #Combobox
     db = DB()
     list1 = db.last(5)
+    list1 = list(set(list1))
     db.close()
     if not list1:
         list1 = ['google.com', 'yandex.ru']
