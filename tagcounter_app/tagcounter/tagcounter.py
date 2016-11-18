@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+
 import pycurl, sys, os, time, yaml, argparse, sqlite3, pickle
 from tkinter import *
 from tkinter.ttk import *
@@ -164,7 +165,9 @@ def check_syn(yfile, syn):
         except:
             return syn, None
     except IOError:
-        print("File {} doesn't exist! \nUse --synfile option to specify other synonyms file".format(yfile))
+        print("""File {} doesn't exist! \n
+                 Use --synfile option to specify other synonyms file
+                 """.format(yfile))
         sys.exit(1)
 
 

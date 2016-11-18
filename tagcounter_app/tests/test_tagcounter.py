@@ -6,6 +6,8 @@ from tagcounter.tagcounter import *
 class Test(unittest.TestCase):
     """
     Here are placed all unittests for tagcounter app.
+    I've covered the base functions, which include the main
+    'download' and 'view' functions.
     """
     def test_GetResponse(self):
         """
@@ -36,6 +38,15 @@ class Test(unittest.TestCase):
         res, _useless = counter(html)
         self.assertEqual(res['h1'], 1)
 
+    def test_check_syn(self):
+        """
+        Check if dafault synonyms file creates correctly
+        """
+        filename = 'test_synfile.yaml'
+        url, syn = check_syn(filename, 'ggl')
+        self.assertEqual(url, 'google.com')
+        if os.path.exists(filename):
+            os.remove(filename)
 
 if __name__ == '__main__':
     unittest.main()

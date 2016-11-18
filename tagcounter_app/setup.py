@@ -8,7 +8,7 @@ setup(
     author='Viktor Krasheninnikov',
     author_email='krasherspost@gmail.com',
     license='MIT',
-    packages=find_packages(),
+    packages=find_packages(exclude=['tagcounter.tests']),
     install_requires=['pycurl', 'pyyaml', 'argparse', 'bs4', 'tabulate'],
     entry_points={
         'console_scripts': [
