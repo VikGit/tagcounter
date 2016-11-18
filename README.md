@@ -24,7 +24,7 @@ $ git clone https://github.com/VikGit/tagcounter.git
 $ cd tagcounter
 $ sudo python3 setup.py sdist
 $ cd dist
-$ sudo python3 setup.py dist
+$ sudo pip3 install tagcounter-1.0.0.tar.gz
 ```
 
 # Usage
